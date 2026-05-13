@@ -65,3 +65,7 @@ cmd1 << LIMITER | cmd2 | ... | cmdN >> outfile
 - Commands are resolved through `PATH` (or used as absolute/relative paths when provided).
 - Command strings are split on spaces, so advanced shell quoting is not fully handled.
 - On command-not-found or execution failures, error messages are printed to stderr.
+
+## Grade
+
+125/100
