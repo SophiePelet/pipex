@@ -1,0 +1,99 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   parsing.c                                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: sopelet <sopelet@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/01/08 16:02:43 by sopelet           #+#    #+#             */
+/*   Updated: 2026/02/05 12:07:19 by sopelet          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "includes/pipex.h"
+
+// check if the given absolute path is executable
+static char	*absolute_path(const char *cmd)
+{
+	if (ft_strchr(cmd, '/'))
+	{
+		if (access(cmd, X_OK) == 0)
+			return ((char *)cmd);
+	}
+	return (NULL);
+}
+
+// check if the given cmd is executable
+static char	*test_path(const char *cmd, const char *path)
+{
+	char	**split;
+	char	*join_path;
+	char	*cmd_path;
+	int		i;
+
+	i = 0;
+	if (absolute_path(cmd))
+		return ((char *)cmd);
+	split = ft_split(path, ':');
+	while (split[i])
+	{
+		join_path = ft_strjoin(split[i], "/");
+		if (!join_path)
+			return (ft_free_array(split), NULL);
+		cmd_path = ft_strjoin(join_path, cmd);
+		if (!cmd_path)
+			return (free(join_path), ft_free_array(split), NULL);
+		free(join_path);
+		if (cmd_path && access(cmd_path, X_OK) == 0)
+			return (ft_free_array(split), cmd_path);
+		free(cmd_path);
+		i++;
+	}
+	return (ft_free_array(split), NULL);
+}
+
+// find the command path in the PATH
+char	*get_cmd_path(char *cmd, char **env, char **av)
+{
+	int		i;
+	char	*cmd_path;
+
+	i = 0;
+	while (env[i])
+	{
+		if (ft_strncmp(env[i], "PATH=", 5) == 0)
+			break ;
+		i++;
+	}
+	cmd_path = test_path(cmd, env[i] + 5);
+	if (!cmd_path)
+	{
+		ft_putstr_fd("pipex: ", 2);
+		ft_putstr_fd(cmd, 2);
+		ft_putstr_fd(": ", 2);
+		if (ft_strchr(cmd, '/'))
+			ft_putstr_fd(ERR_PATH_NOT_FOUND, 2);
+		else
+			ft_putstr_fd(ERR_CMD_NOT_FOUND, 2);
+		if (av)
+			ft_free_array(av);
+		exit(127);
+	}
+	return (cmd_path);
+}
+
+// excute the command given as an argument
+void	exe_cmd(char *cmd, char **env)
+{
+	char	*cmd_path;
+	char	**av;
+
+	av = ft_split(cmd, ' ');
+	if (!av)
+		exit(1);
+	cmd_path = get_cmd_path(av[0], env, av);
+	execve(cmd_path, av, env);
+	ft_putstr_fd("pipex: ", 2);
+	perror(av[0]);
+	exit(127);
+}
